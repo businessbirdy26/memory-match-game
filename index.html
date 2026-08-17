@@ -707,14 +707,14 @@
   .tp-hud {
     display: none;
     align-items: center;
-    justify-content: space-between;
-    gap: 10px;
+    gap: 8px;
     background: var(--panel);
     border: 1px solid var(--panel-border);
     border-radius: 14px;
-    padding: 10px 14px;
+    padding: 8px 10px;
     backdrop-filter: blur(10px);
   }
+  .tp-back-btn { flex-shrink: 0; }
   .tp-player-card {
     flex: 1;
     min-width: 0;
@@ -1103,12 +1103,10 @@
     </div>
   </section>
 
-  <section class="controls" id="twoPlayerControls" style="display:none;">
-    <button class="btn-secondary btn-back" id="backToTwoPlayerSetupBtn">&larr; New Match</button>
-    <span class="level-heading">2 Player</span>
-  </section>
-
   <div class="tp-hud" id="twoPlayerHud" style="display:none;">
+    <button class="icon-btn tp-back-btn" id="backToTwoPlayerSetupBtn" aria-label="New Match">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+    </button>
     <div class="tp-player-card p1" id="tpCard1">
       <span class="tp-name" id="tpNameDisplay1">Player 1</span>
       <span class="tp-score" id="tpScoreDisplay1">0</span>
@@ -1413,7 +1411,6 @@
   var tpNameInput2 = document.getElementById('tpNameInput2');
   var tpDifficultyGroup = document.getElementById('tpDifficultyGroup');
   var tpStartBtn = document.getElementById('tpStartBtn');
-  var twoPlayerControls = document.getElementById('twoPlayerControls');
   var backToTwoPlayerSetupBtn = document.getElementById('backToTwoPlayerSetupBtn');
   var twoPlayerHud = document.getElementById('twoPlayerHud');
   var tpCard1 = document.getElementById('tpCard1');
@@ -1744,7 +1741,6 @@
     // level mid-play) without going through newGame(), which is what normally resets
     // these — clear them explicitly so they can't bleed through underneath.
     levelControls.style.display = 'none';
-    twoPlayerControls.style.display = 'none';
     twoPlayerHud.style.display = 'none';
     starGuide.style.display = 'none';
     missesStat.style.display = 'none';
@@ -2521,7 +2517,6 @@
       streakStat.style.display = 'none';
       missesStat.style.display = 'flex';
       levelControls.style.display = 'flex';
-      twoPlayerControls.style.display = 'none';
       twoPlayerHud.style.display = 'none';
       starGuide.style.display = 'block';
       starGuide.textContent = buildStarGuideText(levelConfig);
@@ -2530,7 +2525,6 @@
       streakStat.style.display = 'none';
       missesStat.style.display = 'none';
       levelControls.style.display = 'none';
-      twoPlayerControls.style.display = 'flex';
       twoPlayerHud.style.display = 'flex';
       starGuide.style.display = 'none';
       modeFooter.textContent = 'Take turns flipping two cards — match a pair to go again.';
@@ -2538,7 +2532,6 @@
       streakStat.style.display = 'flex';
       missesStat.style.display = 'none';
       levelControls.style.display = 'none';
-      twoPlayerControls.style.display = 'none';
       twoPlayerHud.style.display = 'none';
       starGuide.style.display = 'none';
       modeFooter.textContent = opts.mode === 'daily'

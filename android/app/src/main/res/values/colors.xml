@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Matches the bg-0 CSS token in index.html, used as the native launch/splash screen
+         background so there's no white flash before the web splash appears. -->
+    <color name="splashBackground">#0a0a14</color>
+</resources>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A deliberately invisible splash icon. The app's real launcher icon still has the
+     legacy Capacitor placeholder's white circular background (a separate, pre-existing
+     asset issue outside this fix's scope), so showing it here would just reintroduce a
+     smaller white patch on the dark splash. An empty icon keeps the native splash a
+     clean solid bg-0 color, which the web splash screen picks up from almost immediately. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="@android:color/transparent" />
+    <size android:width="1dp" android:height="1dp" />
+</shape>

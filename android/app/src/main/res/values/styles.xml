@@ -16,7 +16,18 @@
     </style>
 
 
+    <!-- Native launch/splash screen, shown by the OS the instant the process starts —
+         before the WebView exists, so this can't be replaced by anything in index.html.
+         windowSplashScreenBackground (read by androidx.core:core-splashscreen, which
+         MainActivity installs) is what the real Android 12+ SplashScreen API actually
+         reads; the legacy android:background is kept too as the pre-12 fallback. Both
+         point at the same dark color as the web app's bg-0 token so this hands off to the web splash with
+         no color change. The icon is intentionally blank — see splash_icon_empty's own
+         comment for why. -->
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
-        <item name="android:background">@drawable/splash</item>
+        <item name="android:background">@color/splashBackground</item>
+        <item name="windowSplashScreenBackground">@color/splashBackground</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon_empty</item>
+        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
     </style>
 </resources>

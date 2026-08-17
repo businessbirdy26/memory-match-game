@@ -1,5 +1,6 @@
 {
   "appId": "com.businessbirdy26.memorymatch",
   "appName": "MemoryMatch",
-  "webDir": "www"
+  "webDir": "www",
+  "backgroundColor": "#0a0a14"
 }
