@@ -21,7 +21,11 @@
 <meta name="apple-mobile-web-app-title" content="MemoryMatch">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet">
+<!-- Loaded as preload+swap rather than a plain stylesheet link so the font fetch can't
+     block first paint — a slow/unreachable fonts.googleapis.com would otherwise hold the
+     whole page (including the splash screen below) at a blank white screen until it resolves. -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&display=swap"></noscript>
 <style>
   /* ---------- Reset & tokens ---------- */
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -63,6 +67,49 @@
     padding-bottom: calc(clamp(10px, 2.5vw, 28px) + env(safe-area-inset-bottom));
     padding-left: calc(clamp(10px, 2.5vw, 28px) + env(safe-area-inset-left));
     padding-right: calc(clamp(10px, 2.5vw, 28px) + env(safe-area-inset-right));
+  }
+
+  /* ---------- Splash screen ---------- */
+  .splash-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    background: radial-gradient(circle at 50% 35%, var(--bg-1), var(--bg-0));
+    transition: opacity 0.4s ease;
+  }
+  .splash-screen.hide { opacity: 0; pointer-events: none; }
+  .splash-logo {
+    font-size: clamp(1.6rem, 6vw, 2.2rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    animation: splashPulse 1.8s ease-in-out infinite;
+  }
+  .splash-logo span {
+    background: linear-gradient(120deg, var(--accent-b), var(--accent-a));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .splash-spinner {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 3px solid var(--panel-border);
+    border-top-color: var(--accent-a);
+    animation: splashSpin 0.85s linear infinite;
+  }
+  @keyframes splashPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(0.96); }
+  }
+  @keyframes splashSpin {
+    to { transform: rotate(360deg); }
   }
 
   /* ---------- Ambient background ---------- */
@@ -181,6 +228,25 @@
   .mode-switch button:not(.active):hover { color: var(--text); }
   .mode-switch button:active { transform: scale(0.96); }
 
+  .icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 1px solid var(--panel-border);
+    background: var(--panel);
+    color: var(--text-dim);
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    transition: color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+  }
+  .icon-btn svg { width: 19px; height: 19px; }
+  .icon-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.25); }
+  .icon-btn:active { transform: scale(0.92); }
+
   /* ---------- Controls ---------- */
   .controls {
     display: flex;
@@ -243,11 +309,101 @@
   }
   .btn-ad:hover { box-shadow: 0 8px 24px rgba(255,143,107,0.5); }
 
+  .btn-danger {
+    background: linear-gradient(120deg, #ff5c7a, #ff3355);
+  }
+  .btn-danger-outline {
+    color: var(--danger);
+    border-color: rgba(255,92,122,0.35);
+  }
+  .btn-danger-outline:hover { border-color: rgba(255,92,122,0.6); background: rgba(255,92,122,0.08); }
+
+  /* ---------- Settings modal ---------- */
+  .settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    text-align: left;
+  }
+  .settings-label { font-weight: 600; font-size: 0.92rem; }
+
+  .toggle-switch {
+    position: relative;
+    width: 46px;
+    height: 26px;
+    flex-shrink: 0;
+    border-radius: 999px;
+    border: 1px solid var(--panel-border);
+    background: rgba(255,255,255,0.08);
+    cursor: pointer;
+    padding: 0;
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+  .toggle-switch .toggle-knob {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--text-dim);
+    transition: transform 0.2s ease, background 0.2s ease;
+  }
+  .toggle-switch.on {
+    background: linear-gradient(120deg, var(--accent-b), var(--accent-a));
+    border-color: transparent;
+  }
+  .toggle-switch.on .toggle-knob {
+    transform: translateX(20px);
+    background: #fff;
+  }
+
+  .settings-divider {
+    height: 1px;
+    background: var(--panel-border);
+    margin: 12px 0 16px;
+  }
+  .settings-warning {
+    text-align: left;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    margin-bottom: 12px;
+  }
+  .settings-confirm-row { display: flex; gap: 10px; }
+  .settings-confirm-row .btn-primary,
+  .settings-confirm-row .btn-secondary { flex: 1; margin-top: 0; width: auto; }
+
   .daily-note {
     font-size: 0.78rem;
     color: var(--text-dim);
     line-height: 1.4;
   }
+
+  .daily-locked {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    width: min(380px, 100%);
+    align-self: center;
+    background: linear-gradient(160deg, #17172a, #101019);
+    border: 1px solid var(--panel-border);
+    border-radius: 20px;
+    padding: 30px 26px;
+    text-align: center;
+    box-shadow: var(--shadow-soft);
+  }
+  .daily-locked-icon { font-size: 2rem; margin-bottom: 6px; }
+  .daily-locked h2 {
+    font-size: 1.3rem;
+    margin-bottom: 8px;
+    background: linear-gradient(120deg, var(--accent-b), var(--accent-c));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .daily-locked p { color: var(--text-dim); font-size: 0.88rem; line-height: 1.5; }
+  .streak-line { color: #ffb84d; font-weight: 700; margin-top: 10px; }
 
   /* ---------- Stats bar ---------- */
   .stats-bar {
@@ -709,6 +865,14 @@
 </head>
 <body>
 
+<!-- Splash screen: first thing in the DOM so it paints before anything else, covering the
+     app's own init work (board build, hearts/coins read, etc). Removed by JS once init
+     finishes at the bottom of the main script. -->
+<div class="splash-screen" id="splashScreen">
+  <div class="splash-logo">Memory<span>Match</span></div>
+  <div class="splash-spinner"></div>
+</div>
+
 <!-- Capacitor native bridge + AdMob plugin, vendored as plain scripts (no bundler in this
      project — see comments at the top of capacitor.js / admob-plugin.js). Both no-op safely
      when this page runs as a regular website/PWA instead of inside the native Android app. -->
@@ -725,6 +889,12 @@
       <button id="dailyBtn">Daily Challenge</button>
       <button id="levelsBtn">Levels</button>
     </div>
+    <button class="icon-btn" id="settingsBtn" aria-label="Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3.2"/>
+        <path d="M19.4 13.5a7.7 7.7 0 0 0 0-3l2-1.6-2-3.4-2.4 1a7.7 7.7 0 0 0-2.6-1.5L14 2h-4l-.4 2.5a7.7 7.7 0 0 0-2.6 1.5l-2.4-1-2 3.4 2 1.6a7.7 7.7 0 0 0 0 3l-2 1.6 2 3.4 2.4-1a7.7 7.7 0 0 0 2.6 1.5L10 22h4l.4-2.5a7.7 7.7 0 0 0 2.6-1.5l2.4 1 2-3.4-2-1.6Z"/>
+      </svg>
+    </button>
   </header>
 
   <section class="level-select" id="levelSelectView" style="display:none;">
@@ -761,6 +931,23 @@
     <p class="daily-note" id="dailyNote">Today's board is the same for everyone. Come back daily to grow your streak.</p>
     <button class="btn-primary" id="dailyReplayBtn">Replay</button>
   </section>
+
+  <div class="daily-locked" id="dailyLockedView" style="display:none;">
+    <div class="daily-locked-icon">🔒</div>
+    <h2 id="dailyLockedTitle">Daily challenge complete!</h2>
+    <p id="dailyLockedMessage">You've completed today's challenge! Come back tomorrow.</p>
+    <div class="win-stat-row">
+      <div class="win-stat">
+        <span class="label">Time</span>
+        <span class="value" id="dailyLockedTime">00:00</span>
+      </div>
+      <div class="win-stat">
+        <span class="label">Moves</span>
+        <span class="value" id="dailyLockedMoves">0</span>
+      </div>
+    </div>
+    <p class="streak-line" id="dailyLockedStreak" style="display:none;"></p>
+  </div>
 
   <section class="controls level-controls" id="levelControls" style="display:none;">
     <button class="btn-secondary btn-back" id="backToLevelsBtn">&larr; Levels</button>
@@ -844,6 +1031,40 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <h2>Settings</h2>
+
+    <div class="settings-row">
+      <span class="settings-label">Sound</span>
+      <button class="toggle-switch" id="soundToggle" type="button" role="switch" aria-checked="true">
+        <span class="toggle-knob"></span>
+      </button>
+    </div>
+    <div class="settings-row">
+      <span class="settings-label">Haptics</span>
+      <button class="toggle-switch" id="hapticsToggle" type="button" role="switch" aria-checked="true">
+        <span class="toggle-knob"></span>
+      </button>
+    </div>
+
+    <div class="settings-divider"></div>
+
+    <div id="settingsResetIdle">
+      <button class="btn-secondary btn-danger-outline" id="resetProgressBtn">Reset Progress</button>
+    </div>
+    <div id="settingsResetConfirm" style="display:none;">
+      <p class="settings-warning">This clears your levels, coins, hearts, and streak. This can't be undone.</p>
+      <div class="settings-confirm-row">
+        <button class="btn-secondary" id="cancelResetBtn">Cancel</button>
+        <button class="btn-primary btn-danger" id="confirmResetBtn">Yes, reset everything</button>
+      </div>
+    </div>
+
+    <button class="btn-secondary" id="closeSettingsBtn">Close</button>
+  </div>
+</div>
+
 <script>
 (function () {
   'use strict';
@@ -886,7 +1107,10 @@
     unlockedLevel: 'mm_unlocked_level',
     coins: 'mm_coins',
     heartsCount: 'mm_hearts_count',
-    heartsRegenTs: 'mm_hearts_regen_ts'
+    heartsRegenTs: 'mm_hearts_regen_ts',
+    dailyResult: 'mm_daily_result',
+    soundEnabled: 'mm_sound_enabled',
+    hapticsEnabled: 'mm_haptics_enabled'
   };
 
   var LEVEL_COUNT = 30;
@@ -936,6 +1160,12 @@
   var dailyNote = document.getElementById('dailyNote');
   var newGameBtn = document.getElementById('newGameBtn');
   var dailyReplayBtn = document.getElementById('dailyReplayBtn');
+  var dailyLockedView = document.getElementById('dailyLockedView');
+  var dailyLockedTitle = document.getElementById('dailyLockedTitle');
+  var dailyLockedMessage = document.getElementById('dailyLockedMessage');
+  var dailyLockedTime = document.getElementById('dailyLockedTime');
+  var dailyLockedMoves = document.getElementById('dailyLockedMoves');
+  var dailyLockedStreak = document.getElementById('dailyLockedStreak');
   var winModal = document.getElementById('winModal');
   var winTime = document.getElementById('winTime');
   var winMoves = document.getElementById('winMoves');
@@ -977,6 +1207,19 @@
   var retryLevelBtn = document.getElementById('retryLevelBtn');
   var watchAdHeartBtn = document.getElementById('watchAdHeartBtn');
   var backToLevelsFromLoseBtn = document.getElementById('backToLevelsFromLoseBtn');
+
+  var splashScreen = document.getElementById('splashScreen');
+
+  var settingsBtn = document.getElementById('settingsBtn');
+  var settingsModal = document.getElementById('settingsModal');
+  var closeSettingsBtn = document.getElementById('closeSettingsBtn');
+  var soundToggle = document.getElementById('soundToggle');
+  var hapticsToggle = document.getElementById('hapticsToggle');
+  var settingsResetIdle = document.getElementById('settingsResetIdle');
+  var settingsResetConfirm = document.getElementById('settingsResetConfirm');
+  var resetProgressBtn = document.getElementById('resetProgressBtn');
+  var cancelResetBtn = document.getElementById('cancelResetBtn');
+  var confirmResetBtn = document.getElementById('confirmResetBtn');
 
   var STAR_ICON = '<polygon points="12 2 14.7 9.3 22 9.3 16.2 13.9 18.4 21 12 16.7 5.6 21 7.8 13.9 2 9.3 9.3 9.3"/>';
   var LOCK_ICON = '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>';
@@ -1032,9 +1275,22 @@
     return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
   }
 
+  // ---------- Settings: sound / haptics toggles ----------
+  function isSoundOn() {
+    var v = localStorage.getItem(STORAGE_KEYS.soundEnabled);
+    return v === null ? true : v === '1';
+  }
+  function isHapticsOn() {
+    var v = localStorage.getItem(STORAGE_KEYS.hapticsEnabled);
+    return v === null ? true : v === '1';
+  }
+  function setSoundOn(on) { localStorage.setItem(STORAGE_KEYS.soundEnabled, on ? '1' : '0'); }
+  function setHapticsOn(on) { localStorage.setItem(STORAGE_KEYS.hapticsEnabled, on ? '1' : '0'); }
+
   // ---------- Sound (synthesized via Web Audio API, no external files) ----------
   var audioCtx = null;
   function getAudioCtx() {
+    if (!isSoundOn()) return null;
     if (!audioCtx) {
       var Ctx = window.AudioContext || window.webkitAudioContext;
       if (!Ctx) return null;
@@ -1103,6 +1359,7 @@
 
   // ---------- Haptics ----------
   function vibrate(pattern) {
+    if (!isHapticsOn()) return;
     if (navigator.vibrate) {
       try { navigator.vibrate(pattern); } catch (e) { /* unsupported or blocked */ }
     }
@@ -1217,6 +1474,60 @@
     localStorage.setItem(STORAGE_KEYS.lastCompleted, today);
     renderStreak();
     return newStreak;
+  }
+
+  // ---------- Daily challenge: once-per-day lock ----------
+  function getDailyResult() {
+    var raw = localStorage.getItem(STORAGE_KEYS.dailyResult);
+    if (raw) {
+      try {
+        var data = JSON.parse(raw);
+        if (data && data.date === todayStr()) return data;
+      } catch (e) { /* ignore malformed data */ }
+    }
+    // Back-compat: saves from before this lock existed only recorded the streak
+    // completion date. Treat those as a locked (but detail-less) win for today.
+    if (getStreakData().lastCompleted === todayStr()) {
+      return { date: todayStr(), won: true, time: null, moves: null };
+    }
+    return null;
+  }
+
+  function saveDailyResult(won, elapsedSeconds, moves) {
+    var data = { date: todayStr(), won: won, time: formatTime(elapsedSeconds), moves: moves };
+    localStorage.setItem(STORAGE_KEYS.dailyResult, JSON.stringify(data));
+    return data;
+  }
+
+  function renderDailyLockedView(result) {
+    dailyLockedTime.textContent = result.time || '—';
+    dailyLockedMoves.textContent = result.moves != null ? result.moves : '—';
+
+    if (result.won) {
+      dailyLockedTitle.textContent = "Daily challenge complete!";
+      dailyLockedMessage.textContent = "You've completed today's challenge! Come back tomorrow.";
+    } else {
+      dailyLockedTitle.textContent = "Daily challenge attempted";
+      dailyLockedMessage.textContent = "You've already played today's challenge. Come back tomorrow for a new one.";
+    }
+
+    var streakData = getStreakData();
+    if (result.won && streakData.lastCompleted === todayStr() && streakData.streak > 0) {
+      dailyLockedStreak.style.display = 'block';
+      dailyLockedStreak.textContent = '🔥 Streak: ' + streakData.streak + ' day' + (streakData.streak === 1 ? '' : 's');
+    } else {
+      dailyLockedStreak.style.display = 'none';
+    }
+  }
+
+  // Hides the live board/controls and shows the locked result card in their place.
+  function showDailyLockedView(result) {
+    dailyControls.style.display = 'none';
+    dailyLockedView.style.display = 'flex';
+    statsBarEl.style.display = 'none';
+    boardWrapEl.style.display = 'none';
+    modeFooter.style.display = 'none';
+    renderDailyLockedView(result);
   }
 
   // ---------- Levels: config ----------
@@ -1803,9 +2114,13 @@
 
     if (state.mode === 'daily') {
       streak = registerDailyCompletion();
+      var dailyResult = saveDailyResult(true, state.elapsedSeconds, state.moves);
       winTitle.textContent = 'Daily challenge complete!';
       winStreak.style.display = 'block';
       winStreak.textContent = '🔥 Streak: ' + streak + ' day' + (streak === 1 ? '' : 's');
+      playAgainBtn.style.display = 'none';
+      // Update the board underneath the modal now, so it's already locked once the modal closes.
+      showDailyLockedView(dailyResult);
     } else if (state.mode === 'levels') {
       var config = getLevelConfig(state.currentLevel);
       var stars = computeStars(config, state.moves, state.elapsedSeconds);
@@ -1938,6 +2253,14 @@
     closeModal();
     closeLoseModal();
     stopTimer();
+
+    // Undo whatever the daily-locked view hid — every real game start (free, levels,
+    // or an unlocked daily) needs these visible again.
+    dailyLockedView.style.display = 'none';
+    statsBarEl.style.display = 'flex';
+    boardWrapEl.style.display = 'flex';
+    modeFooter.style.display = 'block';
+
     state.moves = 0;
     state.matchedPairs = 0;
     state.misses = 0;
@@ -2079,15 +2402,13 @@
     dailyBtn.classList.toggle('active', mode === 'daily');
     levelsBtn.classList.toggle('active', mode === 'levels');
     freeControls.style.display = mode === 'free' ? 'flex' : 'none';
-    dailyControls.style.display = mode === 'daily' ? 'flex' : 'none';
 
-    if (mode === 'daily') {
-      var data = getStreakData();
-      if (data.lastCompleted === todayStr()) {
-        dailyNote.textContent = "You've completed today's challenge. Come back tomorrow to keep your streak, or replay for fun.";
-      } else {
-        dailyNote.textContent = "Today's board is the same for everyone. Match all pairs to extend your streak.";
-      }
+    var dailyResult = mode === 'daily' ? getDailyResult() : null;
+    dailyControls.style.display = (mode === 'daily' && !dailyResult) ? 'flex' : 'none';
+    if (!dailyResult) dailyLockedView.style.display = 'none';
+
+    if (mode === 'daily' && !dailyResult) {
+      dailyNote.textContent = "Today's board is the same for everyone. Match all pairs to extend your streak.";
     }
 
     stopHeartsTicking();
@@ -2104,10 +2425,66 @@
       renderCoinsUI();
       updateTotalStarsUI();
       ensureHeartsTicking();
+    } else if (mode === 'daily' && dailyResult) {
+      // Already played today — show the locked result instead of starting a new game.
+      stopTimer();
+      closeModal();
+      closeLoseModal();
+      levelSelectView.style.display = 'none';
+      gameArea.style.display = 'flex';
+      showDailyLockedView(dailyResult);
     } else {
       levelSelectView.style.display = 'none';
       gameArea.style.display = 'flex';
       newGame({ mode: mode });
+    }
+  }
+
+  // ---------- Settings panel ----------
+  function renderSettingsUI() {
+    soundToggle.classList.toggle('on', isSoundOn());
+    soundToggle.setAttribute('aria-checked', String(isSoundOn()));
+    hapticsToggle.classList.toggle('on', isHapticsOn());
+    hapticsToggle.setAttribute('aria-checked', String(isHapticsOn()));
+  }
+
+  function showResetIdleUI() {
+    settingsResetIdle.style.display = 'block';
+    settingsResetConfirm.style.display = 'none';
+  }
+
+  function openSettings() {
+    renderSettingsUI();
+    showResetIdleUI();
+    settingsModal.classList.add('show');
+  }
+
+  function closeSettings() {
+    settingsModal.classList.remove('show');
+  }
+
+  function resetAllProgress() {
+    [
+      STORAGE_KEYS.streak,
+      STORAGE_KEYS.bestStreak,
+      STORAGE_KEYS.lastCompleted,
+      STORAGE_KEYS.levelProgress,
+      STORAGE_KEYS.unlockedLevel,
+      STORAGE_KEYS.coins,
+      STORAGE_KEYS.heartsCount,
+      STORAGE_KEYS.heartsRegenTs,
+      STORAGE_KEYS.dailyResult
+    ].forEach(function (key) { localStorage.removeItem(key); });
+
+    renderStreak();
+    renderCoinsUI();
+    updateTotalStarsUI();
+    renderHeartsUI();
+
+    if (state.mode === 'levels') {
+      backToLevels();
+    } else if (state.mode === 'daily') {
+      setMode('daily');
     }
   }
 
@@ -2146,6 +2523,32 @@
   loseModal.addEventListener('click', function (e) {
     if (e.target === loseModal) closeLoseModal();
   });
+
+  settingsBtn.addEventListener('click', openSettings);
+  closeSettingsBtn.addEventListener('click', closeSettings);
+  settingsModal.addEventListener('click', function (e) {
+    if (e.target === settingsModal) closeSettings();
+  });
+  soundToggle.addEventListener('click', function () {
+    setSoundOn(!isSoundOn());
+    renderSettingsUI();
+    playFlip(); // audible confirmation when turning sound back on; silently no-ops when off
+  });
+  hapticsToggle.addEventListener('click', function () {
+    setHapticsOn(!isHapticsOn());
+    renderSettingsUI();
+    vibrate(20); // haptic confirmation when turning haptics back on; silently no-ops when off
+  });
+  resetProgressBtn.addEventListener('click', function () {
+    settingsResetIdle.style.display = 'none';
+    settingsResetConfirm.style.display = 'block';
+  });
+  cancelResetBtn.addEventListener('click', showResetIdleUI);
+  confirmResetBtn.addEventListener('click', function () {
+    resetAllProgress();
+    closeSettings();
+  });
+
   hintBtn.addEventListener('click', useHint);
   shareBtn.addEventListener('click', function () {
     if (!state.lastResult) return;
@@ -2159,10 +2562,18 @@
     });
   });
 
+  // ---------- Splash screen ----------
+  function hideSplash() {
+    if (!splashScreen) return;
+    splashScreen.classList.add('hide');
+    setTimeout(function () { splashScreen.style.display = 'none'; }, 400); // matches the CSS fade duration
+  }
+
   // ---------- Init ----------
   renderStreak();
   newGame({ mode: 'free' });
   initAdMob();
+  hideSplash();
 })();
 </script>
 
