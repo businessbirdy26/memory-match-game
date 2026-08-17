@@ -374,6 +374,23 @@
   .settings-confirm-row .btn-primary,
   .settings-confirm-row .btn-secondary { flex: 1; margin-top: 0; width: auto; }
 
+  .settings-note {
+    text-align: left;
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    line-height: 1.5;
+    margin-bottom: 10px;
+  }
+  .settings-value-badge {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--success);
+    background: rgba(52,224,161,0.14);
+    border: 1px solid rgba(52,224,161,0.4);
+    border-radius: 999px;
+    padding: 3px 10px;
+  }
+
   .daily-note {
     font-size: 0.78rem;
     color: var(--text-dim);
@@ -791,10 +808,12 @@
   }
 
   /* ---------- Level play HUD ---------- */
-  .level-controls { gap: 10px; }
+  .level-controls { gap: 10px; position: relative; }
   .level-heading { font-weight: 700; font-size: 0.95rem; }
   .level-hud-right { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-wrap: wrap; }
   .btn-back { width: auto; margin-top: 0; padding: 8px 14px; }
+  .star-guide-btn { width: 30px; height: 30px; }
+  .star-guide-btn svg { width: 16px; height: 16px; }
 
   .btn-hint {
     display: inline-flex;
@@ -817,12 +836,34 @@
   .btn-hint:disabled { opacity: 0.4; cursor: not-allowed; }
   .btn-hint.shake { animation: shakeTile 0.4s ease; }
 
+  /* Shown on demand (via star-guide-btn) instead of permanently reserving a row in the
+     layout — an always-visible two-line block here cost Levels mode noticeably more
+     board space than every other mode at the same viewport, since it's the one extra
+     chrome element Levels has that Free Play/Daily don't. Absolute positioning means it
+     overlays instead of pushing the board around, so sizeBoard()'s generic
+     boardWrap.clientHeight measurement (unchanged — it was never the problem) simply
+     sees more room once this stops occupying flex flow. */
   .star-guide {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 8px;
+    width: max-content;
+    max-width: min(320px, 90vw);
+    background: linear-gradient(160deg, #1a1a2e, #14141f 60%);
+    border: 1px solid var(--panel-border);
+    border-radius: 12px;
+    padding: 10px 14px;
+    box-shadow: var(--shadow-soft);
     font-size: 0.74rem;
     color: var(--text-dim);
     text-align: center;
     letter-spacing: 0.01em;
+    z-index: 15;
   }
+  .star-guide.show { display: block; }
 
   #timeStat.warning .value { color: var(--danger); animation: timePulse 1s ease-in-out infinite; }
   @keyframes timePulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
@@ -992,11 +1033,12 @@
   <div class="splash-spinner"></div>
 </div>
 
-<!-- Capacitor native bridge + AdMob plugin, vendored as plain scripts (no bundler in this
-     project — see comments at the top of capacitor.js / admob-plugin.js). Both no-op safely
+<!-- Capacitor native bridge + AdMob + In-App Purchase plugins, vendored as plain scripts
+     (no bundler in this project — see comments at the top of each file). All no-op safely
      when this page runs as a regular website/PWA instead of inside the native Android app. -->
 <script src="capacitor.js"></script>
 <script src="admob-plugin.js"></script>
+<script src="native-purchases-plugin.js"></script>
 
 <div class="bg-decor"><div class="blob3"></div><div class="grain"></div></div>
 
@@ -1093,6 +1135,10 @@
   <section class="controls level-controls" id="levelControls" style="display:none;">
     <button class="btn-secondary btn-back" id="backToLevelsBtn">&larr; Levels</button>
     <span class="level-heading" id="levelLabel">Level 1</span>
+    <button class="icon-btn star-guide-btn" id="starGuideBtn" aria-label="Star thresholds" style="display:none;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="10.3" x2="12" y2="16"/><circle cx="12" cy="7.4" r="0.9" fill="currentColor" stroke="none"/></svg>
+    </button>
+    <p class="star-guide" id="starGuide"></p>
     <div class="level-hud-right">
       <div class="hearts-row small" id="playHeartsRow"></div>
       <div class="pill coin-pill small">
@@ -1222,6 +1268,20 @@
       </button>
     </div>
 
+    <div class="settings-divider" id="removeAdsDivider" style="display:none;"></div>
+
+    <div id="removeAdsSection" style="display:none;">
+      <div class="settings-row">
+        <span class="settings-label">Remove Ads</span>
+        <span class="settings-value-badge" id="removeAdsBadge" style="display:none;">✓ Purchased</span>
+      </div>
+      <p class="settings-note" id="removeAdsNote">One-time purchase. Removes ads between levels and rounds for good — the "Watch Ad for +1 Heart" option stays if you ever want it.</p>
+      <div class="settings-confirm-row" id="removeAdsButtons">
+        <button class="btn-secondary" id="restoreAdsBtn">Restore Purchase</button>
+        <button class="btn-primary" id="removeAdsBtn">Remove Ads</button>
+      </div>
+    </div>
+
     <div class="settings-divider"></div>
 
     <div id="settingsResetIdle">
@@ -1284,7 +1344,8 @@
     heartsRegenTs: 'mm_hearts_regen_ts',
     dailyResult: 'mm_daily_result',
     soundEnabled: 'mm_sound_enabled',
-    hapticsEnabled: 'mm_haptics_enabled'
+    hapticsEnabled: 'mm_haptics_enabled',
+    removeAdsPurchased: 'mm_remove_ads_purchased'
   };
 
   var LEVEL_COUNT = 30;
@@ -1376,6 +1437,7 @@
   var hintCostEl = document.getElementById('hintCost');
   var timeStat = document.getElementById('timeStat');
   var starGuide = document.getElementById('starGuide');
+  var starGuideBtn = document.getElementById('starGuideBtn');
   var missesStat = document.getElementById('missesStat');
   var missesLeftEl = document.getElementById('missesLeft');
   var modeFooter = document.getElementById('modeFooter');
@@ -1403,6 +1465,13 @@
   var resetProgressBtn = document.getElementById('resetProgressBtn');
   var cancelResetBtn = document.getElementById('cancelResetBtn');
   var confirmResetBtn = document.getElementById('confirmResetBtn');
+  var removeAdsDivider = document.getElementById('removeAdsDivider');
+  var removeAdsSection = document.getElementById('removeAdsSection');
+  var removeAdsBadge = document.getElementById('removeAdsBadge');
+  var removeAdsNote = document.getElementById('removeAdsNote');
+  var removeAdsButtons = document.getElementById('removeAdsButtons');
+  var removeAdsBtn = document.getElementById('removeAdsBtn');
+  var restoreAdsBtn = document.getElementById('restoreAdsBtn');
 
   // 2 Player DOM refs
   var twoPlayerBtn = document.getElementById('twoPlayerBtn');
@@ -1742,7 +1811,8 @@
     // these — clear them explicitly so they can't bleed through underneath.
     levelControls.style.display = 'none';
     twoPlayerHud.style.display = 'none';
-    starGuide.style.display = 'none';
+    starGuide.classList.remove('show');
+    starGuideBtn.style.display = 'none';
     missesStat.style.display = 'none';
     streakStat.style.display = 'none';
     renderDailyLockedView(result);
@@ -1913,7 +1983,12 @@
     // Google's official Android test rewarded-ad unit ID. Always safe to ship in dev builds.
     TEST_REWARDED_AD_UNIT_ID: 'ca-app-pub-3940256099942544/5224354917',
     // Real "Watch Ad for +1 Heart" ad unit ID — only used once USE_TEST_ADS is false.
-    REAL_REWARDED_AD_UNIT_ID: 'ca-app-pub-6366897083335935/8261451162'
+    REAL_REWARDED_AD_UNIT_ID: 'ca-app-pub-6366897083335935/8261451162',
+    // Google's official Android test interstitial ad unit ID. Always safe to ship in dev builds.
+    TEST_INTERSTITIAL_AD_UNIT_ID: 'ca-app-pub-3940256099942544/1033173712',
+    // Real interstitial ad unit ID (between levels / free-play rounds) — only used once
+    // USE_TEST_ADS is false.
+    REAL_INTERSTITIAL_AD_UNIT_ID: 'ca-app-pub-6366897083335935/3526436138'
   };
 
   var admob = null;                 // window.Capacitor.Plugins.AdMob, once available
@@ -1970,8 +2045,30 @@
       }
     });
 
+    admob.addListener('interstitialAdLoaded', function () {
+      interstitialAdStatus = 'ready';
+    });
+    admob.addListener('interstitialAdFailedToLoad', function (err) {
+      console.warn('Interstitial ad failed to load:', err);
+      interstitialAdStatus = 'unavailable';
+    });
+    admob.addListener('interstitialAdFailedToShow', function (err) {
+      console.warn('Interstitial ad failed to show:', err);
+      interstitialAdStatus = 'idle';
+      prepareInterstitialAd();
+      finishInterstitial();
+    });
+    admob.addListener('interstitialAdDismissed', function () {
+      interstitialAdStatus = 'idle';
+      prepareInterstitialAd();
+      finishInterstitial();
+    });
+
     admob.initialize({ initializeForTesting: ADMOB_CONFIG.USE_TEST_ADS })
-      .then(prepareRewardedAd)
+      .then(function () {
+        prepareRewardedAd();
+        prepareInterstitialAd();
+      })
       .catch(function (err) { console.warn('AdMob failed to initialize:', err); });
   }
 
@@ -2005,6 +2102,156 @@
       updateWatchAdButton();
       prepareRewardedAd();
     });
+  }
+
+  // ---------- AdMob: interstitial ads (Levels + Free Play round completions) ----------
+  // Shown occasionally on completion so it's not disruptive: roughly every 3rd-4th level
+  // finished in Levels mode, and about 1 in 3 Free Play rounds. Never shown for Daily
+  // Challenge or 2 Player, and skipped entirely once "Remove Ads" is purchased (see the
+  // In-App Purchase section below) — the rewarded "Watch Ad for +1 Heart" option above is
+  // unaffected either way, since that's a reward the player opts into, not a forced ad.
+  var interstitialAdStatus = 'idle';    // 'idle' | 'loading' | 'ready' | 'showing' | 'unavailable'
+  var pendingInterstitialCallback = null;
+  var interstitialState = {
+    levelCompletionsSinceAd: 0,
+    levelThreshold: randomLevelThreshold() // 3 or 4; re-rolled after each ad shown
+  };
+
+  function randomLevelThreshold() {
+    return Math.random() < 0.5 ? 3 : 4;
+  }
+
+  function interstitialAdUnitId() {
+    return ADMOB_CONFIG.USE_TEST_ADS ? ADMOB_CONFIG.TEST_INTERSTITIAL_AD_UNIT_ID : ADMOB_CONFIG.REAL_INTERSTITIAL_AD_UNIT_ID;
+  }
+
+  function prepareInterstitialAd() {
+    if (!admob || interstitialAdStatus === 'loading' || interstitialAdStatus === 'ready') return;
+    interstitialAdStatus = 'loading';
+    admob.prepareInterstitial({
+      adId: interstitialAdUnitId(),
+      isTesting: ADMOB_CONFIG.USE_TEST_ADS
+    }).catch(function (err) {
+      console.warn('Interstitial ad failed to prepare:', err);
+      interstitialAdStatus = 'unavailable';
+    });
+  }
+
+  function finishInterstitial() {
+    var cb = pendingInterstitialCallback;
+    pendingInterstitialCallback = null;
+    if (cb) cb();
+  }
+
+  function showInterstitialAd(onDone) {
+    if (!admob || interstitialAdStatus !== 'ready') { onDone(); return; }
+    interstitialAdStatus = 'showing';
+    pendingInterstitialCallback = onDone;
+    admob.showInterstitial().catch(function (err) {
+      // Unlike the rewarded ad, this promise resolves as soon as the ad STARTS showing,
+      // not when it's dismissed (see AdInterstitialExecutor.showInterstitial in the
+      // plugin's Android source — call.resolve() runs right after ad.show()). Success is
+      // handled by the Dismissed listener above instead; a rejection here means it failed
+      // to show at all, so proceed now rather than waiting for a Dismissed event that will
+      // never fire.
+      console.warn('Interstitial ad failed to show:', err);
+      interstitialAdStatus = 'idle';
+      prepareInterstitialAd();
+      finishInterstitial();
+    });
+  }
+
+  // Decides whether this completion should trigger an interstitial, then calls
+  // proceedCallback either way — immediately if not, or once the ad is dismissed if so.
+  function maybeShowInterstitial(mode, proceedCallback) {
+    if (isRemoveAdsActive()) {
+      proceedCallback();
+      return;
+    }
+
+    var shouldShow = false;
+    if (mode === 'levels') {
+      interstitialState.levelCompletionsSinceAd++;
+      if (interstitialState.levelCompletionsSinceAd >= interstitialState.levelThreshold) {
+        shouldShow = true;
+        interstitialState.levelCompletionsSinceAd = 0;
+        interstitialState.levelThreshold = randomLevelThreshold();
+      }
+    } else if (mode === 'free') {
+      shouldShow = Math.random() < (1 / 3);
+    }
+
+    if (shouldShow && admob && interstitialAdStatus === 'ready') {
+      showInterstitialAd(proceedCallback);
+    } else {
+      proceedCallback();
+    }
+  }
+
+  // ---------- In-App Purchase: Remove Ads ----------
+  // Remove Ads only runs inside the native Android app; isNativeAndroid() below keeps
+  // this a no-op in a plain browser tab or installed PWA (there's no store to buy from).
+  //
+  // PRODUCT_ID is a placeholder — it must exactly match an in-app product's ID configured
+  // in Google Play Console before a real purchase can succeed. Nothing else here needs to
+  // change once that's set up; just swap this value for the real product ID.
+  var IAP_CONFIG = {
+    PRODUCT_ID: 'remove_ads'
+  };
+
+  var nativePurchases = null; // window.Capacitor.Plugins.NativePurchases, once available
+
+  function isRemoveAdsActive() {
+    return localStorage.getItem(STORAGE_KEYS.removeAdsPurchased) === '1';
+  }
+
+  function setRemoveAdsActive(active) {
+    if (active) {
+      localStorage.setItem(STORAGE_KEYS.removeAdsPurchased, '1');
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.removeAdsPurchased);
+    }
+  }
+
+  function initIAP() {
+    if (!isNativeAndroid() || !window.Capacitor.Plugins || !window.Capacitor.Plugins.NativePurchases) return;
+    nativePurchases = window.Capacitor.Plugins.NativePurchases;
+    removeAdsDivider.style.display = 'block';
+    removeAdsSection.style.display = 'block';
+  }
+
+  function purchaseRemoveAds() {
+    if (!nativePurchases || isRemoveAdsActive()) return;
+    removeAdsBtn.disabled = true;
+    removeAdsBtn.textContent = 'Processing…';
+    nativePurchases.purchaseProduct({
+      productIdentifier: IAP_CONFIG.PRODUCT_ID,
+      productType: 'inapp'
+    }).then(function () {
+      setRemoveAdsActive(true);
+      renderSettingsUI();
+    }).catch(function (err) {
+      // Includes the user simply cancelling the purchase sheet — not an error worth
+      // surfacing beyond the console; just restore the button to try again.
+      console.warn('Remove Ads purchase did not complete:', err);
+      renderSettingsUI();
+    });
+  }
+
+  function restoreRemoveAdsPurchase() {
+    if (!nativePurchases || isRemoveAdsActive()) return;
+    restoreAdsBtn.disabled = true;
+    restoreAdsBtn.textContent = 'Restoring…';
+    nativePurchases.restorePurchases()
+      .then(function () { return nativePurchases.getPurchases({ productType: 'inapp' }); })
+      .then(function (result) {
+        var owned = (result.purchases || []).some(function (p) { return p.productIdentifier === IAP_CONFIG.PRODUCT_ID; });
+        setRemoveAdsActive(owned);
+        renderSettingsUI();
+      }).catch(function (err) {
+        console.warn('Restore purchases failed:', err);
+        renderSettingsUI();
+      });
   }
 
   // ---------- Deck building ----------
@@ -2518,22 +2765,25 @@
       missesStat.style.display = 'flex';
       levelControls.style.display = 'flex';
       twoPlayerHud.style.display = 'none';
-      starGuide.style.display = 'block';
+      starGuide.classList.remove('show');
       starGuide.textContent = buildStarGuideText(levelConfig);
+      starGuideBtn.style.display = 'flex';
       modeFooter.textContent = 'Beat the clock and stay under the miss limit.';
     } else if (opts.mode === '2p') {
       streakStat.style.display = 'none';
       missesStat.style.display = 'none';
       levelControls.style.display = 'none';
       twoPlayerHud.style.display = 'flex';
-      starGuide.style.display = 'none';
+      starGuide.classList.remove('show');
+      starGuideBtn.style.display = 'none';
       modeFooter.textContent = 'Take turns flipping two cards — match a pair to go again.';
     } else {
       streakStat.style.display = 'flex';
       missesStat.style.display = 'none';
       levelControls.style.display = 'none';
       twoPlayerHud.style.display = 'none';
-      starGuide.style.display = 'none';
+      starGuide.classList.remove('show');
+      starGuideBtn.style.display = 'none';
       modeFooter.textContent = opts.mode === 'daily'
         ? 'Match every pair to win. Daily streaks track consecutive days completed.'
         : 'Match every pair to win.';
@@ -2779,6 +3029,17 @@
     soundToggle.setAttribute('aria-checked', String(isSoundOn()));
     hapticsToggle.classList.toggle('on', isHapticsOn());
     hapticsToggle.setAttribute('aria-checked', String(isHapticsOn()));
+
+    var purchased = isRemoveAdsActive();
+    removeAdsBadge.style.display = purchased ? 'inline-block' : 'none';
+    removeAdsNote.style.display = purchased ? 'none' : 'block';
+    removeAdsButtons.style.display = purchased ? 'none' : 'flex';
+    if (!purchased) {
+      removeAdsBtn.disabled = false;
+      removeAdsBtn.textContent = 'Remove Ads';
+      restoreAdsBtn.disabled = false;
+      restoreAdsBtn.textContent = 'Restore Purchase';
+    }
   }
 
   function showResetIdleUI() {
@@ -2837,7 +3098,10 @@
   newGameBtn.addEventListener('click', function () { newGame({ mode: 'free' }); });
   dailyReplayBtn.addEventListener('click', function () { newGame({ mode: 'daily' }); });
   playAgainBtn.addEventListener('click', function () {
-    newGame({ mode: state.mode });
+    var mode = state.mode;
+    maybeShowInterstitial(mode, function () {
+      newGame({ mode: mode });
+    });
   });
   winModal.addEventListener('click', function (e) {
     if (e.target === winModal) closeModal();
@@ -2845,7 +3109,9 @@
   nextLevelBtn.addEventListener('click', function () {
     var next = state.currentLevel + 1;
     closeModal();
-    startLevel(next);
+    maybeShowInterstitial('levels', function () {
+      startLevel(next);
+    });
   });
   backToLevelsBtn.addEventListener('click', backToLevels);
   backToLevelsFromLoseBtn.addEventListener('click', backToLevels);
@@ -2882,6 +3148,8 @@
     resetAllProgress();
     closeSettings();
   });
+  removeAdsBtn.addEventListener('click', purchaseRemoveAds);
+  restoreAdsBtn.addEventListener('click', restoreRemoveAdsPurchase);
 
   Array.prototype.forEach.call(tpDifficultyGroup.querySelectorAll('.chip'), function (chip) {
     chip.addEventListener('click', function () {
@@ -2903,6 +3171,16 @@
   });
   twoPlayerWinModal.addEventListener('click', function (e) {
     if (e.target === twoPlayerWinModal) closeTwoPlayerWinModal();
+  });
+
+  starGuideBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    starGuide.classList.toggle('show');
+  });
+  document.addEventListener('click', function (e) {
+    if (starGuide.classList.contains('show') && e.target !== starGuideBtn && !starGuide.contains(e.target)) {
+      starGuide.classList.remove('show');
+    }
   });
 
   hintBtn.addEventListener('click', useHint);
@@ -2929,6 +3207,7 @@
   renderStreak();
   newGame({ mode: 'free' });
   initAdMob();
+  initIAP();
   hideSplash();
 })();
 </script>

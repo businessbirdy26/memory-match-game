@@ -45,4 +45,6 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Required by @capgo/native-purchases for Google Play Billing (Remove Ads IAP). -->
+    <uses-permission android:name="com.android.vending.BILLING" />
 </manifest>
