@@ -57,6 +57,12 @@
     display: flex;
     justify-content: center;
     padding: clamp(10px, 2.5vw, 28px);
+    /* iOS PWA standalone mode uses a translucent status bar that overlays content —
+       env() insets add the safe-area gap; they resolve to 0 on non-notched/non-PWA contexts. */
+    padding-top: calc(clamp(10px, 2.5vw, 28px) + env(safe-area-inset-top));
+    padding-bottom: calc(clamp(10px, 2.5vw, 28px) + env(safe-area-inset-bottom));
+    padding-left: calc(clamp(10px, 2.5vw, 28px) + env(safe-area-inset-left));
+    padding-right: calc(clamp(10px, 2.5vw, 28px) + env(safe-area-inset-right));
   }
 
   /* ---------- Ambient background ---------- */
