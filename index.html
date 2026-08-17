@@ -321,11 +321,15 @@
     transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
   }
   .card.flipped .card-inner { transform: rotateY(180deg); }
+  /* z-index (valid on grid items without position:relative) keeps the popped
+     card layered above its neighbors while it's mid-scale, so the brief
+     overshoot never gets clipped by an adjacent cell's paint order. */
+  .card.matched { z-index: 2; }
   .card.matched .card-inner { animation: matchPop 0.5s ease; }
 
   @keyframes matchPop {
     0%   { transform: rotateY(180deg) scale(1); }
-    45%  { transform: rotateY(180deg) scale(1.12); }
+    45%  { transform: rotateY(180deg) scale(1.06); }
     100% { transform: rotateY(180deg) scale(1); }
   }
 
@@ -1954,9 +1958,14 @@
   // Service workers require HTTPS (or localhost) — this silently no-ops on file:// or plain HTTP.
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {
-      navigator.serviceWorker.register('sw.js').catch(function (err) {
-        console.warn('Service worker registration failed:', err);
-      });
+      // updateViaCache: 'none' stops the browser from ever serving sw.js itself
+      // from HTTP cache, so a bumped CACHE_NAME is always detected on the next
+      // load instead of silently being masked by a cached copy of this file.
+      navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
+        .then(function (registration) { registration.update(); })
+        .catch(function (err) {
+          console.warn('Service worker registration failed:', err);
+        });
     });
   }
 </script>
