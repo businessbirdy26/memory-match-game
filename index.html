@@ -329,7 +329,10 @@
 
   @keyframes matchPop {
     0%   { transform: rotateY(180deg) scale(1); }
-    45%  { transform: rotateY(180deg) scale(1.06); }
+    /* --match-pop-scale is computed in JS (sizeBoard) from the live card
+       size and gap for the current grid/viewport, so edge-row cards never
+       overflow into surrounding UI. 1.03 is a safe static fallback. */
+    45%  { transform: rotateY(180deg) scale(var(--match-pop-scale, 1.03)); }
     100% { transform: rotateY(180deg) scale(1); }
   }
 
@@ -1409,6 +1412,29 @@
 
     boardEl.style.width = Math.floor(boardW) + 'px';
     boardEl.style.height = Math.floor(boardH) + 'px';
+
+    // The match-pop animation scales a card from its own center, so it grows
+    // outward in both axes at once. Cards are 3:4 (width:height), so the
+    // same scale factor overflows further vertically than horizontally —
+    // and row-gap/column-gap could diverge here too if the CSS ever splits
+    // them. Recompute a scale that keeps the overflow on the *tighter* axis
+    // (usually height) inside the actual gap, so top/bottom-row cards never
+    // bleed into the stats bar/footer and side cards never bleed sideways,
+    // across every difficulty (4x4/4x6/6x6) and viewport size.
+    var cs = getComputedStyle(boardEl);
+    var rowGapPx = parseFloat(cs.rowGap) || 0;
+    var colGapPx = parseFloat(cs.columnGap) || 0;
+    var cardW = (boardW - (cols - 1) * colGapPx) / cols;
+    var cardH = (boardH - (rows - 1) * rowGapPx) / rows;
+    // Max (scale-1) before overflow on that axis reaches its neighboring gap.
+    var headroomW = cardW > 0 ? (2 * colGapPx) / cardW : 0;
+    var headroomH = cardH > 0 ? (2 * rowGapPx) / cardH : 0;
+    var safeDelta = Math.min(headroomW, headroomH);
+    // Keep a margin below the theoretical max (subpixel rounding, and iOS
+    // Safari's known overflow:hidden-vs-3D-transform clipping quirk), and
+    // clamp to a sensible visual range so the pop stays perceptible.
+    var popScale = 1 + Math.min(0.06, Math.max(0.015, safeDelta * 0.6));
+    boardEl.style.setProperty('--match-pop-scale', popScale.toFixed(4));
   }
 
   var sizeBoardRaf = null;
