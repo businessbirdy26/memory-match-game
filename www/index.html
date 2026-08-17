@@ -671,6 +671,125 @@
     75% { transform: translateX(4px); }
   }
 
+  /* ---------- 2 Player mode ---------- */
+  .tp-setup-title {
+    font-size: 1.2rem;
+    font-weight: 800;
+    background: linear-gradient(120deg, var(--accent-b), var(--accent-a));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .tp-name-inputs { display: flex; gap: 12px; flex-wrap: wrap; }
+  .tp-name-field { flex: 1; min-width: 140px; display: flex; flex-direction: column; gap: 6px; }
+  .tp-name-field label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+  }
+  .tp-name-field input {
+    font-family: inherit;
+    font-size: 0.9rem;
+    color: var(--text);
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    outline: none;
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+  .tp-name-field input::placeholder { color: var(--text-dim); opacity: 0.6; }
+  .tp-name-field.p1 input:focus { border-color: var(--accent-a); background: rgba(255,255,255,0.06); }
+  .tp-name-field.p2 input:focus { border-color: var(--accent-c); background: rgba(255,255,255,0.06); }
+
+  .tp-hud {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 14px;
+    padding: 10px 14px;
+    backdrop-filter: blur(10px);
+  }
+  .tp-player-card {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 8px 6px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+  }
+  .tp-player-card .tp-name {
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: var(--text-dim);
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .tp-player-card .tp-score {
+    font-size: 1.25rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+  .tp-player-card.p1.active {
+    border-color: var(--accent-a);
+    background: rgba(124,92,255,0.14);
+    box-shadow: 0 0 0 1px var(--accent-a), 0 0 18px rgba(124,92,255,0.45);
+  }
+  .tp-player-card.p2.active {
+    border-color: var(--accent-c);
+    background: rgba(255,92,184,0.14);
+    box-shadow: 0 0 0 1px var(--accent-c), 0 0 18px rgba(255,92,184,0.45);
+  }
+  .tp-player-card.active .tp-name { color: var(--text); }
+  .tp-turn-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .tp-player-card.p1.celebrate { animation: tpCelebrateP1 0.6s ease; }
+  .tp-player-card.p2.celebrate { animation: tpCelebrateP2 0.6s ease; }
+  @keyframes tpCelebrateP1 {
+    0% { transform: scale(1); }
+    30% { transform: scale(1.08); box-shadow: 0 0 0 2px var(--accent-a), 0 0 28px var(--accent-a); }
+    100% { transform: scale(1); }
+  }
+  @keyframes tpCelebrateP2 {
+    0% { transform: scale(1); }
+    30% { transform: scale(1.08); box-shadow: 0 0 0 2px var(--accent-c), 0 0 28px var(--accent-c); }
+    100% { transform: scale(1); }
+  }
+
+  .card.matched.p1-match .card-back {
+    background: linear-gradient(150deg, rgba(124,92,255,0.28), rgba(124,92,255,0.12));
+    border-color: rgba(124,92,255,0.55);
+    box-shadow: 0 0 0 1px rgba(124,92,255,0.4), 0 0 24px rgba(124,92,255,0.3);
+  }
+  .card.matched.p2-match .card-back {
+    background: linear-gradient(150deg, rgba(255,92,184,0.28), rgba(255,92,184,0.12));
+    border-color: rgba(255,92,184,0.55);
+    box-shadow: 0 0 0 1px rgba(255,92,184,0.4), 0 0 24px rgba(255,92,184,0.3);
+  }
+
+  .win-stat.winner {
+    border-color: #ffb84d;
+    box-shadow: 0 0 0 1px rgba(255,184,77,0.5), 0 0 20px rgba(255,184,77,0.3);
+  }
+
   /* ---------- Level play HUD ---------- */
   .level-controls { gap: 10px; }
   .level-heading { font-weight: 700; font-size: 0.95rem; }
@@ -888,6 +1007,7 @@
       <button id="freeBtn" class="active">Free Play</button>
       <button id="dailyBtn">Daily Challenge</button>
       <button id="levelsBtn">Levels</button>
+      <button id="twoPlayerBtn">2 Player</button>
     </div>
     <button class="icon-btn" id="settingsBtn" aria-label="Settings">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
@@ -914,6 +1034,27 @@
     </div>
     <p class="level-select-hint">Complete a level to unlock the next one.</p>
     <div class="level-grid" id="levelGrid"></div>
+  </section>
+
+  <section class="level-select tp-setup" id="twoPlayerSetupView" style="display:none;">
+    <h2 class="tp-setup-title">2 Player Match</h2>
+    <p class="level-select-hint">Take turns flipping two cards. Match a pair and go again — most pairs wins.</p>
+    <div class="tp-name-inputs">
+      <div class="tp-name-field p1">
+        <label for="tpNameInput1">Player 1</label>
+        <input type="text" id="tpNameInput1" maxlength="14" placeholder="Player 1" autocomplete="off">
+      </div>
+      <div class="tp-name-field p2">
+        <label for="tpNameInput2">Player 2</label>
+        <input type="text" id="tpNameInput2" maxlength="14" placeholder="Player 2" autocomplete="off">
+      </div>
+    </div>
+    <div class="difficulty-group" id="tpDifficultyGroup">
+      <button class="chip active" data-difficulty="easy">Easy 4×4</button>
+      <button class="chip" data-difficulty="medium">Medium 4×6</button>
+      <button class="chip" data-difficulty="hard">Hard 6×6</button>
+    </div>
+    <button class="btn-primary" id="tpStartBtn">Start Game</button>
   </section>
 
   <div id="gameArea">
@@ -961,6 +1102,23 @@
       <button class="btn-hint" id="hintBtn">Hint · <span id="hintCost">15</span> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="7"/><path d="M9.6 9.9c0-1 .9-1.7 1.9-1.7s1.9.7 1.9 1.5c0 1.7-3.8 1.1-3.8 2.8 0 .9.9 1.6 1.9 1.6s1.9-.7 1.9-1.6"/></svg></button>
     </div>
   </section>
+
+  <section class="controls" id="twoPlayerControls" style="display:none;">
+    <button class="btn-secondary btn-back" id="backToTwoPlayerSetupBtn">&larr; New Match</button>
+    <span class="level-heading">2 Player</span>
+  </section>
+
+  <div class="tp-hud" id="twoPlayerHud" style="display:none;">
+    <div class="tp-player-card p1" id="tpCard1">
+      <span class="tp-name" id="tpNameDisplay1">Player 1</span>
+      <span class="tp-score" id="tpScoreDisplay1">0</span>
+    </div>
+    <span class="tp-turn-label" id="tpTurnLabel">Player 1's turn</span>
+    <div class="tp-player-card p2" id="tpCard2">
+      <span class="tp-name" id="tpNameDisplay2">Player 2</span>
+      <span class="tp-score" id="tpScoreDisplay2">0</span>
+    </div>
+  </div>
 
   <p class="star-guide" id="starGuide" style="display:none;"></p>
 
@@ -1016,6 +1174,24 @@
     <button class="btn-primary" id="nextLevelBtn" style="display:none;">Next Level</button>
     <button class="btn-primary" id="playAgainBtn">Play Again</button>
     <button class="btn-secondary" id="shareBtn">Share your streak</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="twoPlayerWinModal">
+  <div class="modal">
+    <h2 id="tpWinTitle">Player 1 wins!</h2>
+    <div class="win-stat-row">
+      <div class="win-stat" id="tpWinStat1">
+        <span class="label" id="tpWinName1">Player 1</span>
+        <span class="value" id="tpWinScore1">0</span>
+      </div>
+      <div class="win-stat" id="tpWinStat2">
+        <span class="label" id="tpWinName2">Player 2</span>
+        <span class="value" id="tpWinScore2">0</span>
+      </div>
+    </div>
+    <button class="btn-primary" id="tpPlayAgainBtn">Play Again</button>
+    <button class="btn-secondary" id="tpBackToModesBtn">Back to Modes</button>
   </div>
 </div>
 
@@ -1145,6 +1321,15 @@
     rows: 4
   };
 
+  // 2 Player mode state — kept fully separate from `state` above so this mode
+  // can't interfere with Free Play / Daily / Levels bookkeeping.
+  var tpState = {
+    difficulty: 'easy',
+    currentPlayer: 1,
+    scores: { 1: 0, 2: 0 },
+    names: { 1: 'Player 1', 2: 'Player 2' }
+  };
+
   // ---------- DOM refs ----------
   var boardEl = document.getElementById('board');
   var boardWrapEl = document.getElementById('boardWrap');
@@ -1173,7 +1358,7 @@
   var winTitle = document.getElementById('winTitle');
   var playAgainBtn = document.getElementById('playAgainBtn');
   var shareBtn = document.getElementById('shareBtn');
-  var chips = document.querySelectorAll('.chip');
+  var chips = document.querySelectorAll('#freeControls .chip');
 
   // Levels DOM refs
   var levelsBtn = document.getElementById('levelsBtn');
@@ -1220,6 +1405,34 @@
   var resetProgressBtn = document.getElementById('resetProgressBtn');
   var cancelResetBtn = document.getElementById('cancelResetBtn');
   var confirmResetBtn = document.getElementById('confirmResetBtn');
+
+  // 2 Player DOM refs
+  var twoPlayerBtn = document.getElementById('twoPlayerBtn');
+  var twoPlayerSetupView = document.getElementById('twoPlayerSetupView');
+  var tpNameInput1 = document.getElementById('tpNameInput1');
+  var tpNameInput2 = document.getElementById('tpNameInput2');
+  var tpDifficultyGroup = document.getElementById('tpDifficultyGroup');
+  var tpStartBtn = document.getElementById('tpStartBtn');
+  var twoPlayerControls = document.getElementById('twoPlayerControls');
+  var backToTwoPlayerSetupBtn = document.getElementById('backToTwoPlayerSetupBtn');
+  var twoPlayerHud = document.getElementById('twoPlayerHud');
+  var tpCard1 = document.getElementById('tpCard1');
+  var tpCard2 = document.getElementById('tpCard2');
+  var tpNameDisplay1 = document.getElementById('tpNameDisplay1');
+  var tpNameDisplay2 = document.getElementById('tpNameDisplay2');
+  var tpScoreDisplay1 = document.getElementById('tpScoreDisplay1');
+  var tpScoreDisplay2 = document.getElementById('tpScoreDisplay2');
+  var tpTurnLabel = document.getElementById('tpTurnLabel');
+  var twoPlayerWinModal = document.getElementById('twoPlayerWinModal');
+  var tpWinTitle = document.getElementById('tpWinTitle');
+  var tpWinStat1 = document.getElementById('tpWinStat1');
+  var tpWinStat2 = document.getElementById('tpWinStat2');
+  var tpWinName1 = document.getElementById('tpWinName1');
+  var tpWinName2 = document.getElementById('tpWinName2');
+  var tpWinScore1 = document.getElementById('tpWinScore1');
+  var tpWinScore2 = document.getElementById('tpWinScore2');
+  var tpPlayAgainBtn = document.getElementById('tpPlayAgainBtn');
+  var tpBackToModesBtn = document.getElementById('tpBackToModesBtn');
 
   var STAR_ICON = '<polygon points="12 2 14.7 9.3 22 9.3 16.2 13.9 18.4 21 12 16.7 5.6 21 7.8 13.9 2 9.3 9.3 9.3"/>';
   var LOCK_ICON = '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>';
@@ -1527,6 +1740,15 @@
     statsBarEl.style.display = 'none';
     boardWrapEl.style.display = 'none';
     modeFooter.style.display = 'none';
+    // This can be reached straight from another mode's gameplay view (e.g. leaving a
+    // level mid-play) without going through newGame(), which is what normally resets
+    // these — clear them explicitly so they can't bleed through underneath.
+    levelControls.style.display = 'none';
+    twoPlayerControls.style.display = 'none';
+    twoPlayerHud.style.display = 'none';
+    starGuide.style.display = 'none';
+    missesStat.style.display = 'none';
+    streakStat.style.display = 'none';
     renderDailyLockedView(result);
   }
 
@@ -2061,15 +2283,28 @@
         setTimeout(function () {
           state.cards[a].matched = true;
           state.cards[b].matched = true;
-          getCardEl(a).classList.add('matched');
-          getCardEl(b).classList.add('matched');
+          var matchedElA = getCardEl(a), matchedElB = getCardEl(b);
+          matchedElA.classList.add('matched');
+          matchedElB.classList.add('matched');
+          if (state.mode === '2p') {
+            var playerMatchClass = 'p' + tpState.currentPlayer + '-match';
+            matchedElA.classList.add(playerMatchClass);
+            matchedElB.classList.add(playerMatchClass);
+            tpState.scores[tpState.currentPlayer]++;
+            renderTwoPlayerHud();
+            celebrateTwoPlayerMatch(tpState.currentPlayer);
+          }
           state.matchedPairs++;
           state.flippedIndices = [];
           state.locked = false;
           playMatch();
           vibrate(15);
           if (state.matchedPairs === state.totalPairs) {
-            onWin();
+            if (state.mode === '2p') {
+              onTwoPlayerWin();
+            } else {
+              onWin();
+            }
           }
         }, 380);
       } else {
@@ -2091,6 +2326,10 @@
           state.locked = false;
           if (state.mode === 'levels' && state.misses >= state.maxMisses) {
             onLevelFail('misses');
+          }
+          if (state.mode === '2p') {
+            tpState.currentPlayer = tpState.currentPlayer === 1 ? 2 : 1;
+            renderTwoPlayerHud();
           }
         }, 800);
       }
@@ -2269,19 +2508,38 @@
     updateMoves();
     timerEl.textContent = '00:00';
 
+    if (opts.mode === '2p') {
+      tpState.currentPlayer = 1;
+      tpState.scores[1] = 0;
+      tpState.scores[2] = 0;
+      renderTwoPlayerHud();
+    }
+
     var levelConfig = (opts.mode === 'levels') ? getLevelConfig(state.currentLevel) : null;
 
     if (opts.mode === 'levels') {
       streakStat.style.display = 'none';
       missesStat.style.display = 'flex';
       levelControls.style.display = 'flex';
+      twoPlayerControls.style.display = 'none';
+      twoPlayerHud.style.display = 'none';
       starGuide.style.display = 'block';
       starGuide.textContent = buildStarGuideText(levelConfig);
       modeFooter.textContent = 'Beat the clock and stay under the miss limit.';
+    } else if (opts.mode === '2p') {
+      streakStat.style.display = 'none';
+      missesStat.style.display = 'none';
+      levelControls.style.display = 'none';
+      twoPlayerControls.style.display = 'flex';
+      twoPlayerHud.style.display = 'flex';
+      starGuide.style.display = 'none';
+      modeFooter.textContent = 'Take turns flipping two cards — match a pair to go again.';
     } else {
       streakStat.style.display = 'flex';
       missesStat.style.display = 'none';
       levelControls.style.display = 'none';
+      twoPlayerControls.style.display = 'none';
+      twoPlayerHud.style.display = 'none';
       starGuide.style.display = 'none';
       modeFooter.textContent = opts.mode === 'daily'
         ? 'Match every pair to win. Daily streaks track consecutive days completed.'
@@ -2303,6 +2561,12 @@
       state.timeLimit = levelConfig.timeLimit;
       state.maxMisses = levelConfig.maxMisses;
       missesLeftEl.textContent = levelConfig.maxMisses;
+    } else if (opts.mode === '2p') {
+      pairs = DIFFICULTIES[tpState.difficulty].pairs;
+      cols = DIFFICULTIES[tpState.difficulty].cols;
+      rng = Math.random;
+      state.timerMode = 'up';
+      state.maxMisses = Infinity;
     } else {
       pairs = DIFFICULTIES[state.difficulty].pairs;
       cols = DIFFICULTIES[state.difficulty].cols;
@@ -2356,6 +2620,76 @@
     updateTotalStarsUI();
   }
 
+  // ---------- 2 Player mode ----------
+  function renderTwoPlayerHud() {
+    tpNameDisplay1.textContent = tpState.names[1];
+    tpNameDisplay2.textContent = tpState.names[2];
+    tpScoreDisplay1.textContent = tpState.scores[1];
+    tpScoreDisplay2.textContent = tpState.scores[2];
+    tpCard1.classList.toggle('active', tpState.currentPlayer === 1);
+    tpCard2.classList.toggle('active', tpState.currentPlayer === 2);
+    tpTurnLabel.textContent = tpState.names[tpState.currentPlayer] + "'s turn";
+  }
+
+  function celebrateTwoPlayerMatch(player) {
+    var card = player === 1 ? tpCard1 : tpCard2;
+    card.classList.remove('celebrate');
+    void card.offsetWidth; // restart the animation even if it's already mid-play
+    card.classList.add('celebrate');
+  }
+
+  function startTwoPlayerSetup() {
+    stopTimer();
+    closeModal();
+    closeLoseModal();
+    closeTwoPlayerWinModal();
+    levelSelectView.style.display = 'none';
+    gameArea.style.display = 'none';
+    twoPlayerSetupView.style.display = 'flex';
+  }
+
+  function startTwoPlayerMatch() {
+    tpState.names[1] = tpNameInput1.value.trim() || 'Player 1';
+    tpState.names[2] = tpNameInput2.value.trim() || 'Player 2';
+
+    twoPlayerSetupView.style.display = 'none';
+    gameArea.style.display = 'flex';
+    newGame({ mode: '2p' });
+  }
+
+  function closeTwoPlayerWinModal() {
+    twoPlayerWinModal.classList.remove('show');
+  }
+
+  function onTwoPlayerWin() {
+    stopTimer();
+    playWin();
+    vibrate([30, 50, 30, 50, 90]);
+    burstConfetti();
+
+    var s1 = tpState.scores[1], s2 = tpState.scores[2];
+    tpWinName1.textContent = tpState.names[1];
+    tpWinName2.textContent = tpState.names[2];
+    tpWinScore1.textContent = s1;
+    tpWinScore2.textContent = s2;
+    tpWinStat1.classList.remove('winner');
+    tpWinStat2.classList.remove('winner');
+
+    if (s1 === s2) {
+      tpWinTitle.textContent = "It's a tie!";
+    } else if (s1 > s2) {
+      tpWinTitle.textContent = tpState.names[1] + ' wins!';
+      tpWinStat1.classList.add('winner');
+    } else {
+      tpWinTitle.textContent = tpState.names[2] + ' wins!';
+      tpWinStat2.classList.add('winner');
+    }
+
+    setTimeout(function () {
+      twoPlayerWinModal.classList.add('show');
+    }, 300);
+  }
+
   // ---------- Levels: hint ----------
   function useHint() {
     if (state.mode !== 'levels' || state.locked) return;
@@ -2401,7 +2735,9 @@
     freeBtn.classList.toggle('active', mode === 'free');
     dailyBtn.classList.toggle('active', mode === 'daily');
     levelsBtn.classList.toggle('active', mode === 'levels');
+    twoPlayerBtn.classList.toggle('active', mode === '2p');
     freeControls.style.display = mode === 'free' ? 'flex' : 'none';
+    if (mode !== '2p') twoPlayerSetupView.style.display = 'none';
 
     var dailyResult = mode === 'daily' ? getDailyResult() : null;
     dailyControls.style.display = (mode === 'daily' && !dailyResult) ? 'flex' : 'none';
@@ -2425,6 +2761,10 @@
       renderCoinsUI();
       updateTotalStarsUI();
       ensureHeartsTicking();
+    } else if (mode === '2p') {
+      // Always land on the setup screen — same as clicking "Levels" always
+      // returns to the level-select grid rather than resuming mid-game.
+      startTwoPlayerSetup();
     } else if (mode === 'daily' && dailyResult) {
       // Already played today — show the locked result instead of starting a new game.
       stopTimer();
@@ -2500,6 +2840,7 @@
   freeBtn.addEventListener('click', function () { setMode('free'); });
   dailyBtn.addEventListener('click', function () { setMode('daily'); });
   levelsBtn.addEventListener('click', function () { setMode('levels'); });
+  twoPlayerBtn.addEventListener('click', function () { setMode('2p'); });
   newGameBtn.addEventListener('click', function () { newGame({ mode: 'free' }); });
   dailyReplayBtn.addEventListener('click', function () { newGame({ mode: 'daily' }); });
   playAgainBtn.addEventListener('click', function () {
@@ -2547,6 +2888,28 @@
   confirmResetBtn.addEventListener('click', function () {
     resetAllProgress();
     closeSettings();
+  });
+
+  Array.prototype.forEach.call(tpDifficultyGroup.querySelectorAll('.chip'), function (chip) {
+    chip.addEventListener('click', function () {
+      Array.prototype.forEach.call(tpDifficultyGroup.querySelectorAll('.chip'), function (c) { c.classList.remove('active'); });
+      chip.classList.add('active');
+      tpState.difficulty = chip.dataset.difficulty;
+    });
+  });
+  tpStartBtn.addEventListener('click', startTwoPlayerMatch);
+  backToTwoPlayerSetupBtn.addEventListener('click', startTwoPlayerSetup);
+  tpPlayAgainBtn.addEventListener('click', function () {
+    closeTwoPlayerWinModal();
+    gameArea.style.display = 'flex';
+    newGame({ mode: '2p' });
+  });
+  tpBackToModesBtn.addEventListener('click', function () {
+    closeTwoPlayerWinModal();
+    startTwoPlayerSetup();
+  });
+  twoPlayerWinModal.addEventListener('click', function (e) {
+    if (e.target === twoPlayerWinModal) closeTwoPlayerWinModal();
   });
 
   hintBtn.addEventListener('click', useHint);
