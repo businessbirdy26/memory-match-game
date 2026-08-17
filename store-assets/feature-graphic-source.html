@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MemoryMatch feature graphic source</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* Google Play feature graphic: exactly 1024x500, no transparency, minimal text
+     per Play Store asset guidelines (no device frames, no promo badges/CTAs). */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 1024px;
+    height: 500px;
+    overflow: hidden;
+    background: #0a0a14;
+    font-family: 'Sora', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+  .stage {
+    position: relative;
+    width: 1024px;
+    height: 500px;
+    background:
+      radial-gradient(circle at 24% 22%, rgba(124,92,255,0.55), transparent 58%),
+      radial-gradient(circle at 78% 82%, rgba(33,212,253,0.42), transparent 55%),
+      radial-gradient(circle at 50% 40%, #10101c, #0a0a14 75%);
+    overflow: hidden;
+  }
+
+  /* Faint floating card shapes for texture, echoing the game's card motif —
+     kept subtle so they read as background texture, not competing content. */
+  .ghost-card {
+    position: absolute;
+    border-radius: 22px;
+    border: 2px solid rgba(255,255,255,0.07);
+    background: rgba(255,255,255,0.025);
+  }
+  .gc1 { width: 150px; height: 205px; left: 640px; top: -40px; transform: rotate(18deg); }
+  .gc2 { width: 120px; height: 165px; left: 900px; top: 300px; transform: rotate(-14deg); }
+  .gc3 { width: 90px; height: 123px; left: 40px; top: 340px; transform: rotate(10deg); }
+
+  /* ---- logo badge (left) — identical geometry/colors to icons/icon.svg ---- */
+  .badge {
+    position: absolute;
+    left: 92px;
+    top: 100px;
+    width: 300px;
+    height: 300px;
+    border-radius: 66px;
+    overflow: hidden;
+    box-shadow: 0 30px 80px rgba(33,20,90,0.55), 0 0 0 1px rgba(255,255,255,0.08) inset;
+  }
+  .badge svg { display: block; width: 100%; height: 100%; }
+
+  /* ---- wordmark + tagline (right) ---- */
+  .content {
+    position: absolute;
+    left: 452px;
+    top: 0;
+    right: 56px;
+    height: 500px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 22px;
+  }
+  .wordmark {
+    font-weight: 800;
+    font-size: 60px;
+    line-height: 1;
+    color: #f5f6fd;
+    letter-spacing: -0.01em;
+    text-shadow: 0 2px 24px rgba(0,0,0,0.35);
+    white-space: nowrap;
+  }
+  .wordmark .accent {
+    background: linear-gradient(120deg, #21d4fd, #7c5cff);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .tagline-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    width: fit-content;
+    padding: 14px 24px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.12);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+  .tagline-pill svg { width: 22px; height: 22px; flex-shrink: 0; }
+  .tagline-pill span {
+    font-weight: 600;
+    font-size: 26px;
+    color: #cfd2ea;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="ghost-card gc1"></div>
+    <div class="ghost-card gc2"></div>
+    <div class="ghost-card gc3"></div>
+
+    <div class="badge">
+      <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#7c5cff"/>
+            <stop offset="55%" stop-color="#5b7bff"/>
+            <stop offset="100%" stop-color="#21d4fd"/>
+          </linearGradient>
+        </defs>
+        <rect width="512" height="512" fill="url(#bg)"/>
+        <rect x="150" y="130" width="160" height="220" rx="24"
+              transform="rotate(-12 230 240)" fill="#14141f" stroke="rgba(255,255,255,0.25)" stroke-width="4"/>
+        <rect x="202" y="150" width="160" height="220" rx="24"
+              fill="#1c1c2e" stroke="rgba(255,255,255,0.35)" stroke-width="4"/>
+        <g transform="translate(222,202.5) scale(5)">
+          <polygon points="12 2 14.7 9.3 22 9.3 16.2 13.9 18.4 21 12 16.7 5.6 21 7.8 13.9 2 9.3 9.3 9.3" fill="#ffffff"/>
+        </g>
+      </svg>
+    </div>
+
+    <div class="content">
+      <div class="wordmark">Memory<span class="accent">Match</span></div>
+      <div class="tagline-pill">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#7c5cff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="8" height="11" rx="2"/><rect x="9" y="8" width="8" height="11" rx="2"/></svg>
+        <span>Classic Memory Card Game</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

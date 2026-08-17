@@ -1,0 +1,53 @@
+MemoryMatch — Google Play Store listing copy
+==============================================
+
+
+SHORT DESCRIPTION (max 80 characters)
+--------------------------------------
+Classic memory game & card matching puzzle for fun brain training
+
+(65 characters)
+
+
+FULL DESCRIPTION (max 4000 characters)
+--------------------------------------
+Sharpen your mind with MemoryMatch — a classic memory game and card matching puzzle built for quick, satisfying brain training sessions any time of day. Flip cards, remember what's underneath, and match every pair as fast as you can in this relaxing yet challenging puzzle game for all ages.
+
+FREE PLAY
+Pick your difficulty — Easy (4x4), Medium (4x6), or Hard (6x6) — and start flipping. Track your moves, your time, and build a win streak as you go. It's the classic memory card game, distilled down to just you and the board.
+
+DAILY CHALLENGE
+Everyone gets the same shuffled board each day. Complete it to keep your daily streak alive, then come back tomorrow for a new one — a simple brain training habit worth building into your day.
+
+LEVELS
+Work through dozens of hand-tuned levels, each with a time limit and a miss limit to keep things tense. Earn up to 3 stars per level based on how well you play, collect coins along the way, and spend them on hints when you're stuck. Run out of hearts and you'll need to wait for them to refill, or watch a quick video ad to keep going right away.
+
+2-PLAYER
+Pass the phone and take turns with a friend on the same device. Whoever remembers the most pairs wins — simple, competitive, and a great icebreaker for two people sharing one screen.
+
+FEATURES
+- Three difficulties, so it's approachable for beginners and challenging for memory game veterans
+- Daily Challenge with streak tracking
+- Level progression with stars, coins, and hints
+- Local 2-player mode — no extra app, account, or internet connection needed
+- Works fully offline, with no login and no account required to play
+- Light, fast, and distraction-free — just cards and your memory
+
+Whether you're after a calming puzzle game to unwind with, a few minutes of brain training between tasks, or a matching game to play with a friend on the couch, MemoryMatch keeps it simple: flip, remember, match. Ads may appear between rounds and levels to keep the game free, never during actual gameplay, and can be removed with a one-time in-app purchase if you'd rather play uninterrupted.
+
+(2087 characters)
+
+
+NOTES
+-----
+- Keyword phrases worked in naturally: "memory game", "card matching",
+  "puzzle game", and "brain training" all appear within the first
+  paragraph of the full description, plus 3 of the 4 in the short
+  description.
+- Every claim above (game modes, hearts/coins/stars, hints, offline play,
+  ad placement, Remove Ads IAP) is drawn directly from the app's actual
+  behavior in index.html — nothing here is aspirational or unbuilt.
+- Feel free to A/B different short descriptions later; a couple more
+  keyword-forward variants that also fit under 80 characters:
+    "A relaxing memory game: card matching puzzle for daily brain training" (69 chars)
+    "Flip, match, remember: a classic card matching memory & puzzle game" (67 chars)
