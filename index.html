@@ -811,7 +811,13 @@
   .level-controls { gap: 10px; position: relative; }
   .level-heading { font-weight: 700; font-size: 0.95rem; }
   .level-hud-right { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-wrap: wrap; }
-  .btn-back { width: auto; margin-top: 0; padding: 8px 14px; }
+  /* Scoped to .level-controls (not just ".btn-back") so this beats .btn-secondary's
+     width:100% on specificity — with two equal-specificity class selectors it's
+     otherwise a coin flip based on which comes later in the stylesheet, and
+     .btn-secondary (declared after this) was winning, forcing the back button to
+     fill the whole row and push everything else in the level HUD onto its own line
+     below — at every viewport, not just the narrow ones handled in the media query. */
+  .level-controls .btn-back { width: auto; margin-top: 0; padding: 8px 14px; }
   .star-guide-btn { width: 30px; height: 30px; }
   .star-guide-btn svg { width: 16px; height: 16px; }
 
@@ -992,8 +998,14 @@
     .modal { padding: 24px 18px; }
     .win-stat-row { gap: 8px; }
     .win-stat { padding: 10px; }
+    /* level-controls has 4 direct flex children (back button, level label, star-guide
+       icon, hud-right group) vs. free/daily's 2 — the generic .controls column-stack
+       above would give it 4 full-width rows instead of 2, costing Levels mode ~80px+
+       of extra chrome height (and therefore board size) that Free Play/Daily never pay.
+       Keep it a wrapping row instead so back+label+icon share a line and only
+       hud-right (forced to width:100% below) wraps to its own. */
+    .level-controls { flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: center; }
     .level-hud-right { justify-content: center; width: 100%; margin-left: 0; }
-    .level-heading { text-align: center; width: 100%; }
     .level-topbar { justify-content: center; }
     .level-grid { grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); }
   }
@@ -2017,7 +2029,10 @@
   }
 
   function initAdMob() {
-    if (!isNativeAndroid() || !window.Capacitor.Plugins || !window.Capacitor.Plugins.AdMob) return;
+    if (!isNativeAndroid() || !window.Capacitor.Plugins || !window.Capacitor.Plugins.AdMob) {
+      console.log('[AdMob] Not initializing — isNativeAndroid=' + isNativeAndroid() + ' pluginPresent=' + !!(window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.AdMob));
+      return;
+    }
     admob = window.Capacitor.Plugins.AdMob;
 
     admob.addListener('onRewardedVideoAdLoaded', function () {
@@ -2046,11 +2061,17 @@
     });
 
     admob.addListener('interstitialAdLoaded', function () {
+      console.log('[Interstitial] Loaded and ready to show.');
       interstitialAdStatus = 'ready';
     });
     admob.addListener('interstitialAdFailedToLoad', function (err) {
-      console.warn('Interstitial ad failed to load:', err);
+      console.warn('[Interstitial] Failed to load:', err);
       interstitialAdStatus = 'unavailable';
+      // Without this, a single failed load (e.g. a cold-start network hiccup) leaves
+      // interstitialAdStatus stuck at 'unavailable' for the rest of the session — nothing
+      // else ever calls prepareInterstitialAd() again on that path, so every future
+      // "should show an ad" decision would silently no-op forever. Retry after a delay.
+      setTimeout(prepareInterstitialAd, 30000);
     });
     admob.addListener('interstitialAdFailedToShow', function (err) {
       console.warn('Interstitial ad failed to show:', err);
@@ -2066,10 +2087,11 @@
 
     admob.initialize({ initializeForTesting: ADMOB_CONFIG.USE_TEST_ADS })
       .then(function () {
+        console.log('[AdMob] Initialized. Preparing rewarded + interstitial ads.');
         prepareRewardedAd();
         prepareInterstitialAd();
       })
-      .catch(function (err) { console.warn('AdMob failed to initialize:', err); });
+      .catch(function (err) { console.warn('[AdMob] Failed to initialize:', err); });
   }
 
   function updateWatchAdButton() {
@@ -2128,12 +2150,14 @@
   function prepareInterstitialAd() {
     if (!admob || interstitialAdStatus === 'loading' || interstitialAdStatus === 'ready') return;
     interstitialAdStatus = 'loading';
+    console.log('[Interstitial] Preparing ad, unit:', interstitialAdUnitId(), 'isTesting:', ADMOB_CONFIG.USE_TEST_ADS);
     admob.prepareInterstitial({
       adId: interstitialAdUnitId(),
       isTesting: ADMOB_CONFIG.USE_TEST_ADS
     }).catch(function (err) {
-      console.warn('Interstitial ad failed to prepare:', err);
+      console.warn('[Interstitial] Failed to prepare:', err);
       interstitialAdStatus = 'unavailable';
+      setTimeout(prepareInterstitialAd, 30000);
     });
   }
 
@@ -2154,7 +2178,7 @@
       // handled by the Dismissed listener above instead; a rejection here means it failed
       // to show at all, so proceed now rather than waiting for a Dismissed event that will
       // never fire.
-      console.warn('Interstitial ad failed to show:', err);
+      console.warn('[Interstitial] Failed to show:', err);
       interstitialAdStatus = 'idle';
       prepareInterstitialAd();
       finishInterstitial();
@@ -2181,7 +2205,18 @@
       shouldShow = Math.random() < (1 / 3);
     }
 
+    console.log('[Interstitial] maybeShowInterstitial mode=' + mode + ' shouldShow=' + shouldShow + ' adStatus=' + interstitialAdStatus + ' admobPresent=' + !!admob);
+
+    if (shouldShow && (!admob || interstitialAdStatus !== 'ready')) {
+      // Wanted to show but the ad wasn't ready in time — this is the case that was
+      // silently swallowing every interstitial. Kick off (or re-kick) a prepare so
+      // the NEXT opportunity has a better chance of finding one ready.
+      console.log('[Interstitial] Wanted to show but ad not ready (status=' + interstitialAdStatus + '); skipping this time and re-preparing.');
+      prepareInterstitialAd();
+    }
+
     if (shouldShow && admob && interstitialAdStatus === 'ready') {
+      console.log('[Interstitial] Ad is ready — showing now.');
       showInterstitialAd(proceedCallback);
     } else {
       proceedCallback();
