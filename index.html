@@ -237,6 +237,12 @@
     transform: none;
   }
 
+  .btn-ad {
+    background: linear-gradient(120deg, #ffb84d, #ff8f6b);
+    box-shadow: 0 6px 18px rgba(255,143,107,0.35);
+  }
+  .btn-ad:hover { box-shadow: 0 8px 24px rgba(255,143,107,0.5); }
+
   .daily-note {
     font-size: 0.78rem;
     color: var(--text-dim);
@@ -703,6 +709,12 @@
 </head>
 <body>
 
+<!-- Capacitor native bridge + AdMob plugin, vendored as plain scripts (no bundler in this
+     project — see comments at the top of capacitor.js / admob-plugin.js). Both no-op safely
+     when this page runs as a regular website/PWA instead of inside the native Android app. -->
+<script src="capacitor.js"></script>
+<script src="admob-plugin.js"></script>
+
 <div class="bg-decor"><div class="blob3"></div><div class="grain"></div></div>
 
 <div class="app">
@@ -826,6 +838,7 @@
     <p id="loseMessage">You ran out of time before finding every pair.</p>
     <div class="hearts-row lose-hearts" id="loseHeartsRow"></div>
     <p class="hearts-timer" id="loseHeartsTimer"></p>
+    <button class="btn-primary btn-ad" id="watchAdHeartBtn" style="display:none;">&#9654; Watch Ad for +1 Heart</button>
     <button class="btn-primary" id="retryLevelBtn">Try Again</button>
     <button class="btn-secondary" id="backToLevelsFromLoseBtn">Back to Levels</button>
   </div>
@@ -962,6 +975,7 @@
   var loseHeartsRow = document.getElementById('loseHeartsRow');
   var loseHeartsTimer = document.getElementById('loseHeartsTimer');
   var retryLevelBtn = document.getElementById('retryLevelBtn');
+  var watchAdHeartBtn = document.getElementById('watchAdHeartBtn');
   var backToLevelsFromLoseBtn = document.getElementById('backToLevelsFromLoseBtn');
 
   var STAR_ICON = '<polygon points="12 2 14.7 9.3 22 9.3 16.2 13.9 18.4 21 12 16.7 5.6 21 7.8 13.9 2 9.3 9.3 9.3"/>';
@@ -1336,9 +1350,132 @@
     return newCount;
   }
 
+  function gainHeart() {
+    var st = getHeartsState();
+    var newCount = Math.min(MAX_HEARTS, st.count + 1);
+    var regenTs = parseInt(localStorage.getItem(STORAGE_KEYS.heartsRegenTs) || '0', 10);
+    if (newCount >= MAX_HEARTS) regenTs = 0;
+    localStorage.setItem(STORAGE_KEYS.heartsCount, String(newCount));
+    localStorage.setItem(STORAGE_KEYS.heartsRegenTs, String(regenTs));
+    return newCount;
+  }
+
   function formatCountdown(ms) {
     var totalSeconds = Math.max(0, Math.ceil(ms / 1000));
     return formatTime(totalSeconds);
+  }
+
+  // ---------- AdMob: rewarded "extra heart" ad ----------
+  // Rewarded ads only run inside the native Android app (Capacitor); isNativeAndroid()
+  // below keeps this whole feature a no-op in a plain browser tab or installed PWA.
+  //
+  // TEST vs REAL ad unit IDs ------------------------------------------------------
+  // USE_TEST_ADS = true routes every ad request through Google's official test ad
+  // unit ID, which always serves clearly-labeled test creatives. Keep this on for
+  // all development/testing so ad requests (and test taps/watches) can't be mistaken
+  // for invalid traffic and risk an AdMob policy violation on the real account.
+  //
+  // Before publishing to the Play Store:
+  //   1. Set USE_TEST_ADS to false below.
+  //   2. Swap the AdMob App ID in android/app/src/main/AndroidManifest.xml — the
+  //      real ID is already noted there in a comment next to the test one.
+  var ADMOB_CONFIG = {
+    USE_TEST_ADS: true,
+    // Google's official Android test rewarded-ad unit ID. Always safe to ship in dev builds.
+    TEST_REWARDED_AD_UNIT_ID: 'ca-app-pub-3940256099942544/5224354917',
+    // Real "Watch Ad for +1 Heart" ad unit ID — only used once USE_TEST_ADS is false.
+    REAL_REWARDED_AD_UNIT_ID: 'ca-app-pub-6366897083335935/8261451162'
+  };
+
+  var admob = null;                 // window.Capacitor.Plugins.AdMob, once available
+  var rewardedAdStatus = 'idle';    // 'idle' | 'loading' | 'ready' | 'showing' | 'unavailable'
+
+  function isNativeAndroid() {
+    var cap = window.Capacitor;
+    return !!(cap && cap.isNativePlatform && cap.isNativePlatform() && cap.getPlatform && cap.getPlatform() === 'android');
+  }
+
+  function rewardedAdUnitId() {
+    return ADMOB_CONFIG.USE_TEST_ADS ? ADMOB_CONFIG.TEST_REWARDED_AD_UNIT_ID : ADMOB_CONFIG.REAL_REWARDED_AD_UNIT_ID;
+  }
+
+  function prepareRewardedAd() {
+    if (!admob || rewardedAdStatus === 'loading' || rewardedAdStatus === 'ready') return;
+    rewardedAdStatus = 'loading';
+    admob.prepareRewardVideoAd({
+      adId: rewardedAdUnitId(),
+      isTesting: ADMOB_CONFIG.USE_TEST_ADS
+    }).catch(function (err) {
+      console.warn('Rewarded ad failed to prepare:', err);
+      rewardedAdStatus = 'unavailable';
+      updateWatchAdButton();
+    });
+  }
+
+  function initAdMob() {
+    if (!isNativeAndroid() || !window.Capacitor.Plugins || !window.Capacitor.Plugins.AdMob) return;
+    admob = window.Capacitor.Plugins.AdMob;
+
+    admob.addListener('onRewardedVideoAdLoaded', function () {
+      rewardedAdStatus = 'ready';
+      updateWatchAdButton();
+    });
+    admob.addListener('onRewardedVideoAdFailedToLoad', function (err) {
+      console.warn('Rewarded ad failed to load:', err);
+      rewardedAdStatus = 'unavailable';
+      updateWatchAdButton();
+    });
+    admob.addListener('onRewardedVideoAdFailedToShow', function (err) {
+      console.warn('Rewarded ad failed to show:', err);
+      rewardedAdStatus = 'idle';
+      updateWatchAdButton();
+      prepareRewardedAd();
+    });
+    admob.addListener('onRewardedVideoAdDismissed', function () {
+      // Fires whether or not a reward was earned. If we're still marked "showing" here,
+      // the Rewarded event never fired, so the user closed the ad without finishing it.
+      if (rewardedAdStatus === 'showing') {
+        rewardedAdStatus = 'idle';
+        updateWatchAdButton();
+        prepareRewardedAd();
+      }
+    });
+
+    admob.initialize({ initializeForTesting: ADMOB_CONFIG.USE_TEST_ADS })
+      .then(prepareRewardedAd)
+      .catch(function (err) { console.warn('AdMob failed to initialize:', err); });
+  }
+
+  function updateWatchAdButton() {
+    if (!watchAdHeartBtn) return;
+    var heartsOut = getHeartsState().count <= 0;
+    var show = heartsOut && isNativeAndroid() && !!admob && rewardedAdStatus !== 'unavailable';
+    watchAdHeartBtn.style.display = show ? 'block' : 'none';
+    if (!show) return;
+    watchAdHeartBtn.disabled = (rewardedAdStatus === 'loading' || rewardedAdStatus === 'showing');
+    watchAdHeartBtn.textContent = rewardedAdStatus === 'showing' ? 'Watching…' :
+      rewardedAdStatus === 'loading' ? 'Loading ad…' :
+      '▶ Watch Ad for +1 Heart';
+  }
+
+  function watchAdForHeart() {
+    if (!admob || rewardedAdStatus !== 'ready') return;
+    rewardedAdStatus = 'showing';
+    updateWatchAdButton();
+
+    admob.showRewardVideoAd().then(function () {
+      // This only resolves once the user has watched the ad in full and earned the reward.
+      rewardedAdStatus = 'idle';
+      gainHeart();
+      renderHeartsUI();
+      updateWatchAdButton();
+      prepareRewardedAd();
+    }).catch(function (err) {
+      console.warn('Rewarded ad was not completed:', err);
+      rewardedAdStatus = 'idle';
+      updateWatchAdButton();
+      prepareRewardedAd();
+    });
   }
 
   // ---------- Deck building ----------
@@ -1529,6 +1666,7 @@
         retryLevelBtn.style.display = 'none';
       }
       loseHeartsRow.innerHTML = levelHeartsRow.innerHTML;
+      updateWatchAdButton();
     }
 
     return st;
@@ -1749,6 +1887,7 @@
       loseHeartsTimer.textContent = 'Out of hearts — next one in ' + formatCountdown(st.msToNext);
       retryLevelBtn.style.display = 'none';
     }
+    updateWatchAdButton();
 
     setTimeout(function () {
       loseModal.classList.add('show');
@@ -2003,6 +2142,7 @@
     closeLoseModal();
     startLevel(state.currentLevel);
   });
+  watchAdHeartBtn.addEventListener('click', watchAdForHeart);
   loseModal.addEventListener('click', function (e) {
     if (e.target === loseModal) closeLoseModal();
   });
@@ -2022,6 +2162,7 @@
   // ---------- Init ----------
   renderStreak();
   newGame({ mode: 'free' });
+  initAdMob();
 })();
 </script>
 

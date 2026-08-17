@@ -1,4 +1,5 @@
-// Copies the root web app (index.html, manifest.json, sw.js, icons/) into
+// Copies the root web app (index.html, manifest.json, sw.js, capacitor.js,
+// admob-plugin.js, icons/) into
 // www/, which is Capacitor's webDir. There's no build step in this project,
 // so this stands in for one — run it (via `npm run sync:android`) before
 // `npx cap sync` any time the root web files change, or the Android app
@@ -9,7 +10,7 @@ const path = require('path');
 const root = path.join(__dirname, '..');
 const wwwDir = path.join(root, 'www');
 
-const files = ['index.html', 'manifest.json', 'sw.js'];
+const files = ['index.html', 'manifest.json', 'sw.js', 'capacitor.js', 'admob-plugin.js'];
 fs.mkdirSync(path.join(wwwDir, 'icons'), { recursive: true });
 
 for (const file of files) {
